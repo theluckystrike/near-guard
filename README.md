@@ -5,6 +5,10 @@ An on-chain spending policy for autonomous AI agents on NEAR.
 An agent can call `spend`. The contract checks the owner's policy first. The contract pays only when every rule passes. The contract writes an `EVENT` line for...[truncated]
 ![Proof card: real testnet transcript](demo/proof-card.png)
 
+## Demo video (30 s)
+
+demo/demo-30s.mp4 - a playback of demo/transcript.txt. Every line is real output from the testnet run.
+
 ## Demo post on X
 
 https://x.com/_alphashark_/status/2121469186312454158
