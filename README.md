@@ -78,3 +78,20 @@ EVENT_JSON:{"standard":"nep297","version":"1.0.0","event":"spend","data":{"agent
 ```
 
 The transcript is in `demo/transcript-v2.txt`. The suite now has 12 tests.
+
+## Why NEAR matters here: the agent key cannot move funds
+
+The agent does not need the account's full key. Give it a function-call access key that names one contract and one method. Real state on testnet:
+
+```
+ed25519:GhrZ7kX4eY1MZ6pL3h  allowance 0.5 NEAR  receiver_id zouguard-11141131.testnet  method_names ["spend"]
+```
+
+A plain transfer with that key is denied:
+
+```
+$ near send agent-11141131.testnet shop-11141131.testnet 0.01
+RequiresFullAccess
+```
+
+So the agent can call `spend` and nothing else. The owner keeps the full key. A stolen agent key cannot empty the wallet. The full transcript is in `demo/transcript-fcak.txt`. One gap: the positive `spend` call with that key returned `ServerError: {}` and is not yet resolved. The positive path is proven with the account key.

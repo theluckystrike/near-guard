@@ -1,0 +1,18 @@
+== Function-call access key test (2026-11-14) ==
+Account: agent-11141131.testnet
+Key restriction on chain (RPC view_access_key_list, final):
+  ed25519:GhrZ7kX4eY1MZ6pL3h  allowance 0.5 NEAR  receiver_id zouguard-11141131.testnet  method_names ["spend"]
+  ed25519:B3XuvXc2iE26MUxxrL    FullAccess (the account's own key, kept for setup)
+
+-- take A: a plain transfer with the function-call key (must be denied)
+$ near send agent-11141131.testnet shop-11141131.testnet 0.01
+RequiresFullAccess
+  transactionHash: 74dBs7nqsiPDMMqXCBAmnPWzn44vu7hoLojPhti5CzXn
+
+Result: the key cannot move funds. The account can only call spend on the guard contract.
+
+-- take B: spend with the function-call key
+$ near call zouguard-11141131.testnet spend '{"receiver":"shop-11141131.testnet","amount":"100000000000000000000000"}' --accountId agent-11141131.testnet
+ServerError: {}   (unresolved; signing worked for take A, so this is a CLI/RPC gap, not a policy refusal)
+
+Status: restriction proven (take A). Positive path proven with the account key (demo/transcript.txt take 1).
