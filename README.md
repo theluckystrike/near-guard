@@ -5,6 +5,10 @@ An on-chain spending policy for autonomous AI agents on NEAR.
 An agent can call `spend`. The contract checks the owner's policy first. The contract pays only when every rule passes. The contract writes an `EVENT` line for...[truncated]
 ![Proof card: real testnet transcript](demo/proof-card.png)
 
+## Demo post on X
+
+https://x.com/_alphashark_/status/2121469186312454158
+
 ## 60-second check for a judge
 
 1. Open https://github.com/theluckystrike/near-guard .
