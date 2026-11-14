@@ -20,6 +20,16 @@ pub struct Policy {
 }
 
 #[near(serializers = [json])]
+pub struct PolicyView {
+    pub per_tx: U128,
+    pub daily: U128,
+    pub spent_today: U128,
+    pub day: u64,
+    pub receivers: Vec<AccountId>,
+    pub enabled: bool,
+}
+
+#[near(serializers = [json])]
 pub struct CheckResult {
     pub ok: bool,
     pub reason: String,
@@ -154,6 +164,21 @@ impl Contract {
         self.policies.get(&agent).map(|mut p| {
             if p.day != today() { p.spent_today = 0; p.day = today(); }
             p
+        })
+    }
+
+    /// Same data as get_policy, with U128 strings. Use this from a browser: a JSON number loses precision above 2^53.
+    pub fn get_policy_view(&self, agent: AccountId) -> Option<PolicyView> {
+        self.policies.get(&agent).map(|mut p| {
+            if p.day != today() { p.spent_today = 0; p.day = today(); }
+            PolicyView {
+                per_tx: U128(p.per_tx),
+                daily: U128(p.daily),
+                spent_today: U128(p.spent_today),
+                day: p.day,
+                receivers: p.receivers.clone(),
+                enabled: p.enabled,
+            }
         })
     }
 
@@ -295,5 +320,13 @@ mod tests {
         c.spend("shop.near".parse().unwrap(), U128(1_000_000));
         let h = near_sdk::test_utils::get_logs();
         assert!(h.iter().any(|l| l.contains("EVENT_JSON") && l.contains("\"event\":\"spend\"")), "{:?}", h);
+    }
+
+    #[test]
+    fn policy_view_uses_string_numbers() {
+        let (c, agent) = setup();
+        let v = c.get_policy_view(agent).unwrap();
+        assert_eq!(v.per_tx.0, 1_000_000);
+        assert_eq!(v.daily.0, 2_500_000);
     }
 }

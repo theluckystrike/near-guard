@@ -61,7 +61,7 @@ function fmt(y){const n=BigInt(y);return (n/10n**24n)+"."+String((n%10n**24n)/10
 (async()=>{
   const dl=document.getElementById("pol");
   try{
-    const p=await view("get_policy",{agent:A});
+    const p=await view("get_policy_view",{agent:A});
     dl.innerHTML="";
     const add=(k,v)=>{const a=document.createElement("dt"),b=document.createElement("dd");a.textContent=k;b.textContent=v;dl.append(a,b)};
     add("agent",A); add("per transaction",fmt(p.per_tx)); add("per day",fmt(p.daily));
