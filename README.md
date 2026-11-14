@@ -6,7 +6,7 @@ An agent can call `spend`. The contract checks the owner's policy first. The con
 ## 60-second check for a judge
 
 1. Open https://github.com/theluckystrike/near-guard .
-2. Run `cargo test --release`. The output shows 9 passing tests.
+2. Run `cargo test --release`. The output shows 12 passing tests.
 3. Open https://testnet.nearblocks.io/address/zouguard-11141131.testnet . The account holds the wasm.
 4. Read `demo/transcript.txt`. It shows one payment that passed and two that were refused.
 5. Run `bash demo/e2e-testnet.sh $(date +%H%M)` to reproduce all of this from zero.
@@ -62,3 +62,17 @@ This is the difference the judges should test: change the policy text in the age
 - Safety and guardrails: the policy is visible and the refusal is logged.
 - Infrastructure: any NEAR agent can call the same contract.
 
+## v2 additions (2026-11-14, live on the same testnet account)
+
+Two changes landed after the first deploy.
+
+1. `can_spend(agent, receiver, amount)` is a view. It returns `{ok, reason}` and changes no state. An agent can ask before it acts. On chain now:
+   - 0.3 NEAR -> `{ ok: false, reason: 'amount is over the per-transaction limit' }`
+   - 0.1 NEAR -> `{ ok: true, reason: 'policy allows this payment' }`
+2. Every write emits a NEP-297 event. The line starts with `EVENT_JSON:`. An indexer can read it without a custom parser. Real line from testnet:
+
+```
+EVENT_JSON:{"standard":"nep297","version":"1.0.0","event":"spend","data":{"agent":"agent-11141131.testnet","receiver":"shop-11141131.testnet","amount":"100000000000000000000000","spent_today":"100000000000000000000000","daily":"500000000000000000000000"}}
+```
+
+The transcript is in `demo/transcript-v2.txt`. The suite now has 12 tests.

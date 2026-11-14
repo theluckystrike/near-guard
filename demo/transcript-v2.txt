@@ -1,0 +1,12 @@
+== v2: can_spend + NEP-297 ==
+Open the explorer for more info: https://testnet.nearblocks.io/txns/5RxCKBJHUnZjb14QvrqoURKjLKToHzFbT4hDvBBbJmf8
+1
+	Log [zouguard-11141131.testnet]: EVENT_JSON:{"standard":"nep297","version":"1.0.0","event":"policy_set","data":{"agent":"agent-11141131.testnet","per_tx":"250000000000000000000000","daily":"500000000000000000000000"}}
+-- can_spend 0.3 (over cap)
+View call: zouguard-11141131.testnet.can_spend({"agent":"agent-11141131.testnet","receiver":"shop-11141131.testnet","amount":"300000000000000000000000"})
+{ ok: false, reason: 'amount is over the per-transaction limit' }
+-- can_spend 0.1 (inside)
+View call: zouguard-11141131.testnet.can_spend({"agent":"agent-11141131.testnet","receiver":"shop-11141131.testnet","amount":"100000000000000000000000"})
+{ ok: true, reason: 'policy allows this payment' }
+-- spend 0.1 (should emit NEP-297)
+	Log [zouguard-11141131.testnet]: EVENT_JSON:{"standard":"nep297","version":"1.0.0","event":"spend","data":{"agent":"agent-11141131.testnet","receiver":"shop-11141131.testnet","amount":"100000000000000000000000","spent_today":"100000000000000000000000","daily":"500000000000000000000000"}}

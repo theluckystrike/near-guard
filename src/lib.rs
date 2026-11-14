@@ -19,6 +19,39 @@ pub struct Policy {
     pub enabled: bool,
 }
 
+#[near(serializers = [json])]
+pub struct CheckResult {
+    pub ok: bool,
+    pub reason: String,
+}
+
+fn check_policy(paused: bool, p: &Policy, receiver: &AccountId, amount: u128, day: u64) -> Result<(), String> {
+    if paused {
+        return Err("all spending is paused".to_string());
+    }
+    if !p.enabled {
+        return Err("agent is disabled".to_string());
+    }
+    if amount > p.per_tx {
+        return Err("amount is over the per-transaction limit".to_string());
+    }
+    if !p.receivers.is_empty() && !p.receivers.contains(receiver) {
+        return Err("receiver is not on the allowlist".to_string());
+    }
+    let spent = if p.day == day { p.spent_today } else { 0 };
+    if spent + amount > p.daily {
+        return Err("amount is over the daily limit".to_string());
+    }
+    Ok(())
+}
+
+fn emit(event: &str, data: String) {
+    env::log_str(&format!(
+        "EVENT_JSON:{{\"standard\":\"nep297\",\"version\":\"1.0.0\",\"event\":\"{}\",\"data\":{}}}",
+        event, data
+    ));
+}
+
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Contract {
@@ -53,7 +86,13 @@ impl Contract {
             &agent,
             &Policy { per_tx: per_tx.0, daily: daily.0, spent_today: 0, day: today(), receivers, enabled: true },
         );
-        env::log_str(&format!("EVENT policy_set agent={} per_tx={} daily={}", agent, per_tx.0, daily.0));
+        emit(
+            "policy_set",
+            format!(
+                "{{\"agent\":\"{}\",\"per_tx\":\"{}\",\"daily\":\"{}\"}}",
+                agent, per_tx.0, daily.0
+            ),
+        );
     }
 
     /// The owner stops or restarts one agent.
@@ -78,24 +117,36 @@ impl Contract {
         require!(env::attached_deposit() == NearToken::from_yoctonear(amount.0), "attach exactly amount");
 
         let mut p = self.policies.get(&agent).expect("agent has no policy");
-        require!(p.enabled, "agent is disabled");
-        require!(amount.0 <= p.per_tx, "amount is over the per-transaction limit");
-        require!(p.receivers.is_empty() || p.receivers.contains(&receiver), "receiver is not on the allowlist");
-
         let d = today();
+        if let Err(e) = check_policy(self.paused, &p, &receiver, amount.0, d) {
+            env::panic_str(&e);
+        }
         if p.day != d {
             p.day = d;
             p.spent_today = 0;
         }
-        require!(p.spent_today + amount.0 <= p.daily, "amount is over the daily limit");
         p.spent_today += amount.0;
         self.policies.insert(&agent, &p);
 
-        env::log_str(&format!(
-            "EVENT spend agent={} receiver={} amount={} spent_today={} daily={}",
-            agent, receiver, amount.0, p.spent_today, p.daily
-        ));
+        emit(
+            "spend",
+            format!(
+                "{{\"agent\":\"{}\",\"receiver\":\"{}\",\"amount\":\"{}\",\"spent_today\":\"{}\",\"daily\":\"{}\"}}",
+                agent, receiver, amount.0, p.spent_today, p.daily
+            ),
+        );
         Promise::new(receiver).transfer(NearToken::from_yoctonear(amount.0))
+    }
+
+    /// Ask the contract if a payment would pass. This call changes no state.
+    pub fn can_spend(&self, agent: AccountId, receiver: AccountId, amount: U128) -> CheckResult {
+        match self.policies.get(&agent) {
+            None => CheckResult { ok: false, reason: "agent has no policy".to_string() },
+            Some(p) => match check_policy(self.paused, &p, &receiver, amount.0, today()) {
+                Ok(()) => CheckResult { ok: true, reason: "policy allows this payment".to_string() },
+                Err(e) => CheckResult { ok: false, reason: e },
+            },
+        }
     }
 
     /// Read one policy. Use this in a dashboard.
@@ -216,5 +267,33 @@ mod tests {
             c.spend("shop.near".parse().unwrap(), U128(1_000))
         }));
         assert!(r.is_err());
+    }
+
+    #[test]
+    fn can_spend_reports_ok_and_reason_without_a_panic() {
+        let (c, agent) = setup();
+        testing_env!(ctx("agent.near", 0, 10));
+        let ok = c.can_spend(agent.clone(), "shop.near".parse().unwrap(), U128(1_000_000));
+        assert!(ok.ok);
+        let bad = c.can_spend(agent, "shop.near".parse().unwrap(), U128(9_000_000));
+        assert!(!bad.ok);
+        assert_eq!(bad.reason, "amount is over the per-transaction limit");
+    }
+
+    #[test]
+    fn can_spend_reports_a_missing_policy() {
+        let (c, _) = setup();
+        let r = c.can_spend("nobody.near".parse().unwrap(), "shop.near".parse().unwrap(), U128(1));
+        assert!(!r.ok);
+        assert_eq!(r.reason, "agent has no policy");
+    }
+
+    #[test]
+    fn logs_a_nep297_event() {
+        let (mut c, _) = setup();
+        testing_env!(ctx("agent.near", 1_000_000, 10));
+        c.spend("shop.near".parse().unwrap(), U128(1_000_000));
+        let h = near_sdk::test_utils::get_logs();
+        assert!(h.iter().any(|l| l.contains("EVENT_JSON") && l.contains("\"event\":\"spend\"")), "{:?}", h);
     }
 }
