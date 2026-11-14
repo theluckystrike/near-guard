@@ -20,10 +20,17 @@ https://x.com/_alphashark_/status/2121469186312454158
 ## 60-second check for a judge
 
 1. Open https://github.com/theluckystrike/near-guard .
-2. Run `cargo test --release`. The output shows 12 passing tests.
-3. Open https://testnet.nearblocks.io/address/zouguard-11141131.testnet . The account holds the wasm.
-4. Read `demo/transcript.txt`. It shows one payment that passed and two that were refused.
-5. Run `bash demo/e2e-testnet.sh $(date +%H%M)` to reproduce all of this from zero.
+2. Run `cargo test --release`. The output shows 13 passing tests.
+3. Run `cargo build --target wasm32-unknown-unknown --release`. It writes
+   `target/wasm32-unknown-unknown/release/near_guard.wasm` (about 231 KB).
+4. Open https://testnet.nearblocks.io/address/zouguard-11141131.testnet . The account holds the wasm.
+5. Read `demo/transcript.txt`. It shows one payment that passed and two that were refused.
+6. Run `bash demo/e2e-testnet.sh $(date +%H%M)` to reproduce all of this from zero.
+
+Note: `near-sdk` resolves to the newest 5.x that satisfies the manifest. That is fine for tests and for the
+wasm build. If a future 5.x release stops a plain `cargo build` with a "Use `cargo near build`" message,
+install `cargo-near` and use it, or pin `near-sdk` to an older 5.x. The test count and the wasm build in this
+README were checked against `near-sdk` 5.30.2.
 
 If any step fails, the claim in this README is false. Report it.
 
