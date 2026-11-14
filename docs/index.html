@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>near-guard - live policy check</title>
+<style>
+:root{--bg:#0d1117;--fg:#c9d1d9;--mut:#8b949e;--ok:#7ee787;--bad:#ff7b72;--line:#30363d;--acc:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:820px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:34px 0 10px}
+p.sub{color:var(--mut);margin:0 0 22px}
+.card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:#11161d}
+dl{display:grid;grid-template-columns:180px 1fr;gap:6px 14px;margin:0}
+dt{color:var(--mut)}dd{margin:0;font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+label{display:block;color:var(--mut);font-size:13px;margin:10px 0 4px}
+input{width:100%;padding:9px 10px;background:#0b0f14;border:1px solid var(--line);border-radius:7px;color:var(--fg);font:14px ui-monospace,Menlo,monospace}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{margin-top:14px;padding:10px 16px;border-radius:8px;border:1px solid #2ea043;background:#238636;color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:progress}
+.out{margin-top:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--line);font-family:ui-monospace,Menlo,monospace;font-size:14px;white-space:pre-wrap}
+.ok{border-color:#2ea043;color:var(--ok)}.bad{border-color:#8b2c2c;color:var(--bad)}
+pre{margin:0;overflow:auto;font-size:13px;color:var(--mut)}
+code{color:var(--acc)}
+footer{margin-top:40px;color:var(--mut);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+</style></head><body><main>
+<h1>near-guard</h1>
+<p class="sub">Live read of the spend policy on NEAR testnet. This page talks to the chain. It has no server and no build step.</p>
+
+<h2>Policy</h2>
+<div class="card"><dl id="pol"><dt>state</dt><dd>loading</dd></dl></div>
+
+<h2>Would this payment pass?</h2>
+<div class="card">
+  <div class="row">
+    <div><label for="rcv">receiver account</label><input id="rcv" value="shop-11141131.testnet"></div>
+    <div><label for="amt">amount (NEAR)</label><input id="amt" value="0.10"></div>
+  </div>
+  <button id="go">Ask the contract</button>
+  <div id="out" class="out" hidden></div>
+</div>
+
+<h2>What the contract does</h2>
+<pre>
+owner sets a policy per agent:  per_tx cap, daily cap, receiver allowlist
+agent calls spend(receiver, amount) with the amount attached
+contract checks the policy -> pays, or panics before any state changes
+every write emits a NEP-297 EVENT_JSON line
+a function-call access key lets the agent call only this contract, only spend()
+</pre>
+
+<footer>Chain: NEAR testnet. Contract: <code>zouguard-11141131.testnet</code>. Source: <a href="https://github.com/theluckystrike/near-guard" style="color:var(--acc)">github.com/theluckystrike/near-guard</a>.</footer>
+</main>
+<script>
+const RPC="https://rpc.testnet.near.org", C="zouguard-11141131.testnet", A="agent-11141131.testnet";
+const b64=(o)=>btoa(JSON.stringify(o));
+async function view(method,args){
+  const r=await fetch(RPC,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"query",params:{request_type:"call_function",finality:"final",account_id:C,method_name:method,args_base64:b64(args)}})});
+  const j=await r.json();
+  if(j.error) throw new Error(j.error.cause?.name||j.error.message);
+  return JSON.parse(new TextDecoder().decode(new Uint8Array(j.result.result)));
+}
+function fmt(y){const n=BigInt(y);return (n/10n**24n)+"."+String((n%10n**24n)/10n**20n).padStart(4,"0")+" NEAR"}
+(async()=>{
+  const dl=document.getElementById("pol");
+  try{
+    const p=await view("get_policy",{agent:A});
+    dl.innerHTML="";
+    const add=(k,v)=>{const a=document.createElement("dt"),b=document.createElement("dd");a.textContent=k;b.textContent=v;dl.append(a,b)};
+    add("agent",A); add("per transaction",fmt(p.per_tx)); add("per day",fmt(p.daily));
+    add("spent today",fmt(p.spent_today)); add("receivers",(p.receivers||[]).join(", ")||"any");
+    add("enabled",String(p.enabled));
+  }catch(e){dl.innerHTML="<dt>state</dt><dd>read failed: "+e.message+"</dd>"}
+})();
+document.getElementById("go").onclick=async()=>{
+  const b=document.getElementById("go"),o=document.getElementById("out");
+  b.disabled=true;o.hidden=false;o.className="out";o.textContent="asking the contract...";
+  try{
+    const rcv=document.getElementById("rcv").value.trim(), amt=document.getElementById("amt").value.trim();
+    const yocto=BigInt(Math.round(Number(amt)*1e6))*BigInt(1e18);
+    const r=await view("can_spend",{agent:A,receiver:rcv,amount:yocto.toString()});
+    o.className="out "+(r.ok?"ok":"bad");
+    o.textContent=(r.ok?"PASS  ":"REFUSE  ")+r.reason;
+  }catch(e){o.className="out bad";o.textContent="error: "+e.message}
+  b.disabled=false;
+};
+</script></body></html>
