@@ -20,17 +20,30 @@ https://x.com/_alphashark_/status/2121469186312454158
 ## 60-second check for a judge
 
 1. Open https://github.com/theluckystrike/near-guard .
-2. Run `cargo test --release`. The output shows 13 passing tests.
+2. Run `cargo test`. The output shows 13 passing tests. Do not add `--release`:
+   the release profile sets `panic = "abort"`, which turns the `#[should_panic]`
+   tests into a process abort (`failed to initiate panic, error 3`).
 3. Run `cargo build --target wasm32-unknown-unknown --release`. It writes
-   `target/wasm32-unknown-unknown/release/near_guard.wasm` (about 231 KB).
+   `target/wasm32-unknown-unknown/release/near_guard.wasm` (about 205 KB on
+   rustc 1.99.0).
 4. Open https://testnet.nearblocks.io/address/zouguard-11141131.testnet . The account holds the wasm.
 5. Read `demo/transcript.txt`. It shows one payment that passed and two that were refused.
 6. Run `bash demo/e2e-testnet.sh $(date +%H%M)` to reproduce all of this from zero.
 
-Note: `near-sdk` resolves to the newest 5.x that satisfies the manifest. That is fine for tests and for the
-wasm build. If a future 5.x release stops a plain `cargo build` with a "Use `cargo near build`" message,
-install `cargo-near` and use it, or pin `near-sdk` to an older 5.x. The test count and the wasm build in this
-README were checked against `near-sdk` 5.30.2.
+Note on the dependency: `near-sdk` is pinned to exactly `=5.5.0` with the
+`legacy` feature. Newer 5.x releases gate `near_sdk::collections` behind
+`legacy`, and 5.30.2 stops this crate with `unresolved import`. Without the
+pin, a clean checkout that resolves a newer 5.x does not compile.
+
+The deployed contract, read from chain with an RPC `view_code` query on 2026-11-14:
+
+- account `zouguard-11141131.testnet`
+- code hash `BNdjdVD5i8RusU5iXsMeKFpk6L8iCrSxmJYNR7jsqRhV`
+- 236516 bytes, sha256 `9a1f9a46…35ec`
+
+A local rebuild with rustc 1.99.0 and near-sdk 5.5.0 gives 209578 bytes and a
+different hash. Rust builds are not byte-reproducible across toolchains, so this
+contract is verified by what it does on chain, not by hash equality.
 
 If any step fails, the claim in this README is false. Report it.
 
