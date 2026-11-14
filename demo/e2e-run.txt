@@ -1,0 +1,27 @@
+will use: zouguard-11141131.testnet owner, agent-11141131.testnet agent, shop-11141131.testnet receiver
+$ create-account zouguard-11141131.testnet  (exists, skip)
+$ create-account agent-11141131.testnet  (exists, skip)
+$ create-account shop-11141131.testnet  (exists, skip)
+$ deploy zouguard-11141131.testnet
+Transaction Id Eit3vFHeW4wJr73L8KyngWq1Xz21dQUDhthrCgpAq5HA
+Open the explorer for more info: https://testnet.nearblocks.io/txns/Eit3vFHeW4wJr73L8KyngWq1Xz21dQUDhthrCgpAq5HA
+$ new owner=zouguard-11141131.testnet
+	Failure [zouguard-11141131.testnet]: Error: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+$ set_policy agent=agent-11141131.testnet per_tx=0.25 daily=0.5 receivers=[shop-11141131.testnet]
+	Log [zouguard-11141131.testnet]: EVENT policy_set agent=agent-11141131.testnet per_tx=250000000000000000000000 daily=500000000000000000000000
+--- take 1: 0.1 NEAR inside the policy must pass
+	Log [zouguard-11141131.testnet]: EVENT spend agent=agent-11141131.testnet receiver=shop-11141131.testnet amount=100000000000000000000000 spent_today=100000000000000000000000 daily=500000000000000000000000
+--- take 2: 0.3 NEAR over per_tx must fail
+	Failure [zouguard-11141131.testnet]: Error: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+--- take 3: unknown receiver must fail
+	Failure [zouguard-11141131.testnet]: Error: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+--- final policy state
+View call: zouguard-11141131.testnet.get_policy({"agent":"agent-11141131.testnet"})
+{
+  per_tx: 2.5e+23,
+  daily: 5e+23,
+  spent_today: 1e+23,
+  day: 20771,
+  receivers: [ 'shop-11141131.testnet' ],
+  enabled: true
+}
