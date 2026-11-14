@@ -1,0 +1,12 @@
+ask  can_spend(shop-11141131.testnet, 0.10 NEAR) -> ok=True  reason=policy allows this payment
+     agent pays -> EVENT_JSON spend logged 
+
+ask  can_spend(stranger.testnet, 0.10 NEAR) -> ok=False  reason=receiver is not on the allowlist
+     agent stops. no money moves.
+
+ask  can_spend(shop-11141131.testnet, 3.00 NEAR) -> ok=False  reason=amount is over the per-transaction limit
+     agent stops. no money moves.
+
+ask  can_spend(shop-11141131.testnet, 0.20 NEAR) -> ok=True  reason=policy allows this payment
+     agent pays -> EVENT_JSON spend logged 
+

@@ -103,3 +103,20 @@ RequiresFullAccess
 ```
 
 So the agent can call `spend` and nothing else. The owner keeps the full key. A stolen agent key cannot empty the wallet. The full transcript is in `demo/transcript-fcak.txt`. One gap: the positive `spend` call with that key returned `ServerError: {}` and is not yet resolved. The positive path is proven with the account key.
+
+## The agent loop, with real output
+
+`demo/agent_demo.py` is a 10-line agent. It asks `can_spend` first. It pays only when the answer is yes. Real run on 2026-11-14:
+
+```
+ask  can_spend(shop-11141131.testnet, 0.10 NEAR) -> ok=True  reason=policy allows this payment
+     agent pays -> EVENT_JSON spend logged
+ask  can_spend(stranger.testnet, 0.10 NEAR) -> ok=False  reason=receiver is not on the allowlist
+     agent stops. no money moves.
+ask  can_spend(shop-11141131.testnet, 3.00 NEAR) -> ok=False  reason=amount is over the per-transaction limit
+     agent stops. no money moves.
+ask  can_spend(shop-11141131.testnet, 0.20 NEAR) -> ok=True  reason=policy allows this payment
+     agent pays -> EVENT_JSON spend logged
+```
+
+Run it yourself: `python3 demo/agent_demo.py`. The transcript is in `demo/transcript-agent.txt`.
