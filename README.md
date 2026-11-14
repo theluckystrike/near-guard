@@ -42,7 +42,9 @@ The deployed contract, read from chain with an RPC `view_code` query on 2026-11-
 - 236516 bytes, sha256 `9a1f9a46…35ec`
 
 A local rebuild with rustc 1.99.0 and near-sdk 5.5.0 gives 209578 bytes and a
-different hash. Rust builds are not byte-reproducible across toolchains, so this
+different hash. A fresh clone of commit 270de09 reproduces that same 209578
+bytes exactly (sha256 `32d463a4…890f`), so the tree is reproducible; it simply
+does not match the deployed binary, which was built on an older toolchain. The
 contract is verified by what it does on chain, not by hash equality.
 
 If any step fails, the claim in this README is false. Report it.
