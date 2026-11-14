@@ -1,0 +1,143 @@
+
+$ npx --yes near-cli deploy zouguard-11141131.testnet /Users/mike/near-guard-1114/target/wasm32-unknown-unknown/release/near_guard.wasm
+Deploying contract /Users/mike/near-guard-1114/target/wasm32-unknown-unknown/release/near_guard.wasm in zouguard-11141131.testnet
+Done deploying to zouguard-11141131.testnet
+Transaction Id 63NunHv7c2QJSiMFuvNK1RDo4jXx6j99SzbCpDLEvJue
+Open the explorer for more info: https://testnet.nearblocks.io/txns/63NunHv7c2QJSiMFuvNK1RDo4jXx6j99SzbCpDLEvJue
+
+$ npx --yes near-cli call zouguard-11141131.testnet new {"owner":"zouguard-11141131.testnet"} --accountId zouguard-11141131.testnet
+Scheduling a call: zouguard-11141131.testnet.new({"owner":"zouguard-11141131.testnet"})
+Transaction Id 47z4NDc34jbA1M49jSADrAr98f6f3LFTUxx9WM8VTSnF
+Open the explorer for more info: https://testnet.nearblocks.io/txns/47z4NDc34jbA1M49jSADrAr98f6f3LFTUxx9WM8VTSnF
+''
+
+$ npx --yes near-cli call zouguard-11141131.testnet set_policy {"agent":"agent-11141131.testnet","per_tx":"250000000000000000000000","daily":"500000000000000000000000","receivers":["shop-11141131.testnet"]} --accountId zouguard-11141131.testnet
+Scheduling a call: zouguard-11141131.testnet.set_policy({"agent":"agent-11141131.testnet","per_tx":"250000000000000000000000","daily":"500000000000000000000000","receivers":["shop-11141131.testnet"]})
+Receipt: BVxshGJ3hy2doNgumHEcWZio6CwXECiUTASQ7Fa48PCd
+	Log [zouguard-11141131.testnet]: EVENT policy_set agent=agent-11141131.testnet per_tx=250000000000000000000000 daily=500000000000000000000000
+Transaction Id CnLR3ZaLt5Dij8E35Q4htgFS7xMBUGwK5ZgCBDgSZ3mr
+Open the explorer for more info: https://testnet.nearblocks.io/txns/CnLR3ZaLt5Dij8E35Q4htgFS7xMBUGwK5ZgCBDgSZ3mr
+''
+
+--- take 1: a payment inside the policy must pass
+
+$ npx --yes near-cli call zouguard-11141131.testnet spend {"receiver":"shop-11141131.testnet","amount":"100000000000000000000000"} --accountId agent-11141131.testnet --depositYocto 100000000000000000000000
+Scheduling a call: zouguard-11141131.testnet.spend({"receiver":"shop-11141131.testnet","amount":"100000000000000000000000"}) with attached 0.1 NEAR
+Receipts: 2th3ZA1PyANQD8h36iKGsThAUxK6fJFJsZo6zFsUCiWU, AXfxVUqtUFeaq7DGV2qcDssmK9d3Rxp2r4baaUkxcuf9
+	Log [zouguard-11141131.testnet]: EVENT spend agent=agent-11141131.testnet receiver=shop-11141131.testnet amount=100000000000000000000000 spent_today=100000000000000000000000 daily=500000000000000000000000
+Transaction Id ASkWBGsX1nLbfEe8itm3rdJSrSHRSCi2ueyESxiVJNE7
+Open the explorer for more info: https://testnet.nearblocks.io/txns/ASkWBGsX1nLbfEe8itm3rdJSrSHRSCi2ueyESxiVJNE7
+''
+
+--- take 2: a payment over the per-transaction limit must fail
+
+$ npx --yes near-cli call zouguard-11141131.testnet spend {"receiver":"shop-11141131.testnet","amount":"300000000000000000000000"} --accountId agent-11141131.testnet --depositYocto 300000000000000000000000
+Scheduling a call: zouguard-11141131.testnet.spend({"receiver":"shop-11141131.testnet","amount":"300000000000000000000000"}) with attached 0.3 NEAR
+Receipts: 8y8Kfa8LaMqrcvfaaYGoNRGfzXeD2LU3r9ArvFwHpMNf, 9daukCVDNcGXittM9iUmgF4LMx6qwgZduchv1CtABEGT
+	Failure [zouguard-11141131.testnet]: Error: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+near call <contractName> <methodName> [args]
+
+Call method in smart contract
+
+Options:
+      --help                            Show help  [boolean]
+      --version                         Show version number  [boolean]
+  -v, --verbose                         Prints out verbose output  [boolean] [default: false]
+      --useAccount, --accountId         Account that will execute the actions  [string] [required]
+      --signWithLedger, --useLedgerKey  Use Ledger for signing  [boolean] [default: false]
+      --ledgerPath                      HD key path  [string] [default: "44'/397'/0'/0'/1'"]
+      --networkId                       Which network to use. Supports: mainnet, testnet, custom  [string] [default: "testnet"]
+      --gas                             Max amount of gas this call can use (in gas units)  [string] [default: 30000000000000]
+      --deposit, --amount               Number of tokens to attach (in NEAR) to a function call  [string] [default: "0"]
+      --depositYocto                    Number of tokens to attach (in yocto NEAR) to a function call  [string] [default: null]
+      --base64                          Treat arguments as base64-encoded BLOB.  [boolean] [default: false]
+      --privateKey                      AccessKey to use in the call  [string] [default: null]
+
+ServerTransactionError: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+    at parseResultError (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/utils/lib/errors/rpc_errors.js:31:29)
+    at Account.<anonymous> (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/accounts/lib/account.js:123:56)
+    at Generator.next (<anonymous>)
+    at fulfilled (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/accounts/lib/account.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'ActionError',
+  context: undefined,
+  index: 0,
+  kind: { index: 0, kind: { FunctionCallError: [Object] } },
+  transaction_outcome: {
+    block_hash: '5HzCuP3qdjf92fYB8un5rsSUa9qykeXrQ4TofvLzHpdm',
+    id: 'HWGEVHXoLnBiYhZu5GShxRdoheY1DQow6VssA5d9SokM',
+    outcome: {
+      executor_id: 'agent-11141131.testnet',
+      gas_burnt: 311731146055,
+      logs: [],
+      metadata: [Object],
+      receipt_ids: [Array],
+      status: [Object],
+      tokens_burnt: '31173114605500000000'
+    },
+    proof: []
+  }
+}
+
+--- take 3: a payment to a receiver outside the allowlist must fail
+
+$ npx --yes near-cli call zouguard-11141131.testnet spend {"receiver":"stranger.testnet","amount":"100000000000000000000000"} --accountId agent-11141131.testnet --depositYocto 100000000000000000000000
+Scheduling a call: zouguard-11141131.testnet.spend({"receiver":"stranger.testnet","amount":"100000000000000000000000"}) with attached 0.1 NEAR
+Receipts: 5tmzzirc3xQXESpJpjnfR1gB2Aavd4HJvvF4jqfFUgeS, DigD1jiPjwXMnkXLuDE4N9g5aBhwCqJeyR4micBDc4o5
+	Failure [zouguard-11141131.testnet]: Error: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+near call <contractName> <methodName> [args]
+
+Call method in smart contract
+
+Options:
+      --help                            Show help  [boolean]
+      --version                         Show version number  [boolean]
+  -v, --verbose                         Prints out verbose output  [boolean] [default: false]
+      --useAccount, --accountId         Account that will execute the actions  [string] [required]
+      --signWithLedger, --useLedgerKey  Use Ledger for signing  [boolean] [default: false]
+      --ledgerPath                      HD key path  [string] [default: "44'/397'/0'/0'/1'"]
+      --networkId                       Which network to use. Supports: mainnet, testnet, custom  [string] [default: "testnet"]
+      --gas                             Max amount of gas this call can use (in gas units)  [string] [default: 30000000000000]
+      --deposit, --amount               Number of tokens to attach (in NEAR) to a function call  [string] [default: "0"]
+      --depositYocto                    Number of tokens to attach (in yocto NEAR) to a function call  [string] [default: null]
+      --base64                          Treat arguments as base64-encoded BLOB.  [boolean] [default: false]
+      --privateKey                      AccessKey to use in the call  [string] [default: null]
+
+ServerTransactionError: {"index":0,"kind":{"index":0,"kind":{"FunctionCallError":{"ExecutionError":"WebAssembly trap: An `unreachable` opcode was executed."}}}}
+    at parseResultError (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/utils/lib/errors/rpc_errors.js:31:29)
+    at Account.<anonymous> (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/accounts/lib/account.js:123:56)
+    at Generator.next (<anonymous>)
+    at fulfilled (/Users/mike/.npm/_npx/2723b039a0173fe3/node_modules/@near-js/accounts/lib/account.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'ActionError',
+  context: undefined,
+  index: 0,
+  kind: { index: 0, kind: { FunctionCallError: [Object] } },
+  transaction_outcome: {
+    block_hash: '37nSbLwLvd5VvdNJgSipdZ4dFShxqonBCEfqBB8m6A3Q',
+    id: 'CoWgA91k4uyaqTnsqyCSo4Rz3MFQELYGh9s42UomkKwT',
+    outcome: {
+      executor_id: 'agent-11141131.testnet',
+      gas_burnt: 311492727480,
+      logs: [],
+      metadata: [Object],
+      receipt_ids: [Array],
+      status: [Object],
+      tokens_burnt: '31149272748000000000'
+    },
+    proof: [ [Object] ]
+  }
+}
+
+--- state after the three takes
+
+$ npx --yes near-cli view zouguard-11141131.testnet get_policy {"agent":"agent-11141131.testnet"}
+View call: zouguard-11141131.testnet.get_policy({"agent":"agent-11141131.testnet"})
+{
+  per_tx: 2.5e+23,
+  daily: 5e+23,
+  spent_today: 1e+23,
+  day: 20771,
+  receivers: [ 'shop-11141131.testnet' ],
+  enabled: true
+}
